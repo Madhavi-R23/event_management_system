@@ -1,0 +1,54 @@
+services:
+  app:
+    build: ./backend
+    container_name: aura-app
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./frontend:/app/frontend:ro # edit HTML, refresh browser
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request;urllib.request.urlopen('http://localhost:8000/health')",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks: [aura-net]
+
+  jenkins:
+    image: jenkins/jenkins:lts-jdk17
+    container_name: aura-jenkins
+    user: root
+    ports:
+      - "8080:8080"
+      - "50000:50000"
+    volumes:
+      - jenkins_home:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock # lets pipelines build images later
+    restart: unless-stopped
+    networks: [aura-net]
+
+  prometheus:
+    image: prom/prometheus:v2.53.0
+    container_name: aura-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    depends_on:
+      - app
+    restart: unless-stopped
+    networks: [aura-net]
+
+volumes:
+  jenkins_home:
+  prometheus_data:
+
+networks:
+  aura-net:
