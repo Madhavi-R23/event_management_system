@@ -1,11 +1,13 @@
+name: aura-events # fixed project name so Jenkins and manual runs manage the same containers
+
 services:
   app:
-    build: ./backend
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
     container_name: aura-app
     ports:
       - "8000:8000"
-    volumes:
-      - ./frontend:/app/frontend:ro # edit HTML, refresh browser
     healthcheck:
       test:
         [
@@ -21,7 +23,7 @@ services:
     networks: [aura-net]
 
   jenkins:
-    image: jenkins/jenkins:lts-jdk17
+    build: ./jenkins
     container_name: aura-jenkins
     user: root
     ports:
@@ -29,17 +31,16 @@ services:
       - "50000:50000"
     volumes:
       - jenkins_home:/var/jenkins_home
-      - /var/run/docker.sock:/var/run/docker.sock # lets pipelines build images later
+      - /var/run/docker.sock:/var/run/docker.sock
     restart: unless-stopped
     networks: [aura-net]
 
   prometheus:
-    image: prom/prometheus:v2.53.0
+    build: ./prometheus
     container_name: aura-prometheus
     ports:
       - "9090:9090"
     volumes:
-      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus_data:/prometheus
     depends_on:
       - app
