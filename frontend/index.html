@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AuraEvents - Smart Event Matcher</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Quicksand', 'Plus Jakarta Sans', 'sans-serif'],
+          },
+          colors: {
+            pastel: {
+              cream: '#FCF9F5',
+              lavender: '#EDE8F5',
+              lavenderSoft: '#E8DFFF',
+              lavenderDeep: '#7E68AD',
+              blush: '#FDECEF',
+              peach: '#FFE7D1',
+              peachSoft: '#FFF1E3',
+              peachDeep: '#C97A44',
+              sage: '#E5F3E2',
+              sageDeep: '#497D4B',
+              blue: '#E0F0FE',
+              blueDeep: '#3F6E99',
+              dark: '#2D3142',
+              muted: '#636A80'
+            }
+          },
+          boxShadow: {
+            'soft-card': '0 10px 25px -5px rgba(189, 178, 255, 0.12), 0 8px 10px -6px rgba(255, 214, 165, 0.15)',
+            'soft-hover': '0 20px 30px -10px rgba(160, 196, 255, 0.25)',
+            'pill': '0 4px 12px -2px rgba(232, 223, 255, 0.4)'
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Custom pastel gradient organic blobs */
+    .bg-blob-grid {
+      background-color: #FAF6F0;
+      background-image: 
+        radial-gradient(circle at 10% 20%, rgba(255, 230, 240, 0.8) 0%, transparent 40%),
+        radial-gradient(circle at 90% 15%, rgba(224, 240, 254, 0.75) 0%, transparent 45%),
+        radial-gradient(circle at 50% 55%, rgba(255, 241, 227, 0.8) 0%, transparent 50%),
+        radial-gradient(circle at 20% 85%, rgba(229, 243, 226, 0.85) 0%, transparent 45%),
+        radial-gradient(circle at 85% 80%, rgba(237, 232, 245, 0.85) 0%, transparent 40%);
+      background-attachment: fixed;
+    }
+
+    /* Custom range slider styling */
+    input[type=range] {
+      -webkit-appearance: none;
+      background: #F1EDF7;
+      border-radius: 9999px;
+      height: 8px;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      height: 22px;
+      width: 22px;
+      border-radius: 50%;
+      background: #FFD6A5;
+      border: 3px solid #FFFFFF;
+      box-shadow: 0 2px 8px rgba(201, 122, 68, 0.25);
+      cursor: pointer;
+      transition: transform 0.15s ease, background 0.15s ease;
+    }
+    input[type=range]::-webkit-slider-thumb:hover {
+      transform: scale(1.15);
+      background: #FFC988;
+    }
+
+    /* Smooth animated pill transition */
+    .filter-badge {
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .filter-badge.active {
+      background-color: #EDE8F5;
+      color: #5D4B87;
+      border-color: #BDB2FF;
+      box-shadow: 0 4px 12px rgba(189, 178, 255, 0.35);
+      transform: translateY(-1px);
+    }
+
+    /* Subtle pulse animation for status */
+    @keyframes gentle-pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.6; transform: scale(1.15); }
+    }
+    .animate-gentle-pulse {
+      animation: gentle-pulse 2.2s infinite ease-in-out;
+    }
+  </style>
+</head>
+<body class="bg-blob-grid text-pastel-dark font-sans min-h-screen antialiased flex flex-col justify-between selection:bg-pastel-peach selection:text-pastel-peachDeep">
+
+  <!-- Floating Sticky Navigation Bar -->
+  <header class="sticky top-3 z-50 px-4 max-w-4xl mx-auto w-full">
+    <nav class="bg-white/85 backdrop-blur-md border border-white/60 rounded-3xl px-4 py-3 shadow-soft-card flex items-center justify-between transition-all">
+      <!-- Brand Logo -->
+      <div class="flex items-center space-x-2.5">
+        <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#FFD6A5] via-[#EDE8F5] to-[#A0C4FF] flex items-center justify-center shadow-inner text-lg">
+          ✨
+        </div>
+        <div>
+          <span class="font-bold text-lg tracking-tight text-pastel-dark block leading-none">AuraEvents</span>
+          <span class="text-[11px] font-medium text-pastel-lavenderDeep tracking-wide">Smart AI Matcher</span>
+        </div>
+      </div>
+
+      <!-- Quick Action Buttons -->
+      <div class="flex items-center gap-2">
+        <button id="viewToggleBtn" class="px-3 py-1.5 rounded-2xl bg-pastel-cream text-pastel-dark/80 text-xs font-semibold hover:bg-pastel-lavender/50 border border-white/80 transition-all flex items-center gap-1.5">
+          <span class="text-xs">🧭</span>
+          <span class="hidden sm:inline">Preferences</span>
+        </button>
+        <button class="bg-[#FFD6A5] hover:bg-[#FFE7D1] active:scale-95 text-pastel-peachDeep text-xs sm:text-sm font-bold px-4 py-2 rounded-2xl shadow-pill transition-all duration-300 flex items-center gap-1.5 border border-white/80">
+          <span>+</span>
+          <span>Create Event</span>
+        </button>
+      </div>
+    </nav>
+  </header>
+
+  <!-- Hero Header / Subtitle -->
+  <div class="max-w-4xl mx-auto w-full px-4 pt-4 pb-2 text-center">
+    <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-pastel-blush/90 text-xs font-semibold text-[#B34D6B] border border-pink-100 shadow-sm mb-1.5">
+      🌸 Fuzzy Logic Recommendation Engine v2.4
+    </span>
+    <h1 class="text-2xl sm:text-3xl font-extrabold text-pastel-dark tracking-tight">Discover Curated Vibes</h1>
+    <p class="text-xs sm:text-sm text-pastel-muted max-w-md mx-auto mt-1">Personalized gathering spaces matched dynamically against your mood, schedule, and social energy.</p>
+  </div>
+
+  <!-- Main Container (Responsive Grid / Two-Column Layout) -->
+  <main class="max-w-4xl mx-auto w-full px-4 py-3 flex-1">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+
+      <!-- LEFT COLUMN: Input Dashboard & Preference Indication -->
+      <section class="lg:col-span-5 space-y-4" id="preferencesSection">
+        <div class="bg-white/85 backdrop-blur-md rounded-3xl p-5 border border-white/70 shadow-soft-card">
+          <!-- Section Heading -->
+          <div class="flex items-center justify-between mb-4 pb-2 border-b border-gray-100/70">
+            <div class="flex items-center gap-2">
+              <span class="p-2 rounded-2xl bg-pastel-peach text-sm">🎛️</span>
+              <div>
+                <h2 class="font-bold text-sm text-pastel-dark">Preference Indicators</h2>
+                <p class="text-[11px] text-pastel-muted">Dynamic taste profile inputs</p>
+              </div>
+            </div>
+            <button id="resetFiltersBtn" class="text-[11px] font-semibold text-pastel-lavenderDeep hover:underline">
+              Reset
+            </button>
+          </div>
+
+          <!-- Slider 1: Social Energy / Vibe Meter -->
+          <div class="space-y-1.5 mb-4 bg-pastel-cream/70 p-3 rounded-2xl border border-white/50">
+            <div class="flex justify-between items-center text-xs font-semibold">
+              <span class="text-pastel-dark flex items-center gap-1.5">
+                <span>🍃</span> Vibe Energy
+              </span>
+              <span id="vibeLabel" class="text-pastel-lavenderDeep bg-pastel-lavender px-2 py-0.5 rounded-xl text-[11px]">Mellow & Chill</span>
+            </div>
+            <input type="range" id="vibeSlider" min="1" max="3" value="1" class="w-full cursor-pointer accent-[#FFD6A5]">
+            <div class="flex justify-between text-[10px] text-pastel-muted pt-0.5 font-medium">
+              <span>Mellow</span>
+              <span>Balanced</span>
+              <span>High Energy</span>
+            </div>
+          </div>
+
+          <!-- Slider 2: Event Timing Window -->
+          <div class="space-y-1.5 mb-4 bg-pastel-cream/70 p-3 rounded-2xl border border-white/50">
+            <div class="flex justify-between items-center text-xs font-semibold">
+              <span class="text-pastel-dark flex items-center gap-1.5">
+                <span>🌙</span> Preferred Timing
+              </span>
+              <span id="timeLabel" class="text-pastel-peachDeep bg-pastel-peach px-2 py-0.5 rounded-xl text-[11px]">Evening (6-10 PM)</span>
+            </div>
+            <input type="range" id="timingSlider" min="1" max="3" value="3" class="w-full cursor-pointer accent-[#BDB2FF]">
+            <div class="flex justify-between text-[10px] text-pastel-muted pt-0.5 font-medium">
+              <span>Morning</span>
+              <span>Afternoon</span>
+              <span>Evening</span>
+            </div>
+          </div>
+
+          <!-- Slider 3: Proximity / Radius -->
+          <div class="space-y-1.5 mb-4 bg-pastel-cream/70 p-3 rounded-2xl border border-white/50">
+            <div class="flex justify-between items-center text-xs font-semibold">
+              <span class="text-pastel-dark flex items-center gap-1.5">
+                <span>📍</span> Max Distance
+              </span>
+              <span id="distanceLabel" class="text-pastel-blueDeep bg-pastel-blue px-2 py-0.5 rounded-xl text-[11px]">Under 8 km</span>
+            </div>
+            <input type="range" id="distanceSlider" min="2" max="25" value="8" step="1" class="w-full cursor-pointer accent-[#A0C4FF]">
+            <div class="flex justify-between text-[10px] text-pastel-muted pt-0.5 font-medium">
+              <span>2 km (Local)</span>
+              <span>15 km</span>
+              <span>25 km (Metro)</span>
+            </div>
+          </div>
+
+          <!-- Multi-select Filter Badges -->
+          <div class="pt-1">
+            <label class="block text-xs font-bold text-pastel-dark mb-2 flex items-center justify-between">
+              <span>🎯 Interest Badges</span>
+              <span class="text-[10px] text-pastel-muted font-normal">Tap to filter</span>
+            </label>
+            <div class="flex flex-wrap gap-1.5" id="badgeContainer">
+              <button data-tag="all" class="filter-badge active text-xs font-semibold px-3 py-1.5 rounded-2xl border border-transparent bg-pastel-cream text-pastel-dark hover:border-pastel-lavenderSoft">
+                ✨ All Matches
+              </button>
+              <button data-tag="tech" class="filter-badge text-xs font-semibold px-3 py-1.5 rounded-2xl border border-transparent bg-pastel-cream text-pastel-dark hover:border-pastel-lavenderSoft">
+                💻 Tech & AI
+              </button>
+              <button data-tag="casual" class="filter-badge text-xs font-semibold px-3 py-1.5 rounded-2xl border border-transparent bg-pastel-cream text-pastel-dark hover:border-pastel-lavenderSoft">
+                ☕ Casual Hangout
+              </button>
+              <button data-tag="creative" class="filter-badge text-xs font-semibold px-3 py-1.5 rounded-2xl border border-transparent bg-pastel-cream text-pastel-dark hover:border-pastel-lavenderSoft">
+                🎨 Creative Arts
+              </button>
+              <button data-tag="wellness" class="filter-badge text-xs font-semibold px-3 py-1.5 rounded-2xl border border-transparent bg-pastel-cream text-pastel-dark hover:border-pastel-lavenderSoft">
+                🧘‍♀️ Mind & Yoga
+              </button>
+              <button data-tag="food" class="filter-badge text-xs font-semibold px-3 py-1.5 rounded-2xl border border-transparent bg-pastel-cream text-pastel-dark hover:border-pastel-lavenderSoft">
+                🧁 Bakery & Tea
+              </button>
+            </div>
+          </div>
+
+          <!-- Fuzzy Engine Live Weights Indicator -->
+          <div class="mt-4 p-3 rounded-2xl bg-gradient-to-r from-pastel-lavender/50 to-pastel-blush/40 border border-white/60">
+            <div class="flex items-center justify-between text-[11px] font-semibold text-pastel-dark mb-1">
+              <span>Fuzzy Weights Synced</span>
+              <span class="text-pastel-sageDeep bg-pastel-sage px-2 py-0.5 rounded-lg text-[10px]">Optimal</span>
+            </div>
+            <div class="w-full bg-white/70 h-2 rounded-full overflow-hidden flex">
+              <div class="bg-[#BDB2FF] h-full" style="width: 45%" title="Vibe Similarity"></div>
+              <div class="bg-[#FFD6A5] h-full" style="width: 35%" title="Schedule Fit"></div>
+              <div class="bg-[#A0C4FF] h-full" style="width: 20%" title="Proximity"></div>
+            </div>
+            <div class="flex justify-between text-[9px] text-pastel-muted mt-1">
+              <span>Vibe: 45%</span>
+              <span>Time: 35%</span>
+              <span>Geo: 20%</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Summary Mini-Card -->
+        <div class="bg-white/80 backdrop-blur-md rounded-3xl p-4 border border-white/70 shadow-soft-card flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-2xl bg-pastel-sage flex items-center justify-center text-lg shadow-sm">
+              🎟️
+            </div>
+            <div>
+              <div class="text-xs font-bold text-pastel-dark">3 Priority Events Found</div>
+              <div class="text-[11px] text-pastel-muted">Within your comfort score threshold</div>
+            </div>
+          </div>
+          <span class="text-xs font-bold text-pastel-sageDeep bg-pastel-sage/90 px-2.5 py-1 rounded-2xl">
+            Live
+          </span>
+        </div>
+      </section>
+
+      <!-- RIGHT COLUMN: Smart Event Recommendation Cards -->
+      <section class="lg:col-span-7 space-y-4" id="recommendationsSection">
+        <div class="flex items-center justify-between px-1">
+          <div>
+            <h2 class="text-base font-bold text-pastel-dark flex items-center gap-1.5">
+              <span>🌸 Smart Match Feed</span>
+            </h2>
+            <p class="text-[11px] text-pastel-muted">Ranked using multi-parameter fuzzy inference</p>
+          </div>
+          <div class="text-xs font-semibold text-pastel-lavenderDeep bg-white/80 px-3 py-1 rounded-2xl border border-white/60 shadow-sm flex items-center gap-1">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+            <span>Real-time</span>
+          </div>
+        </div>
+
+        <!-- Event Card 1 -->
+        <article class="event-card bg-white/90 backdrop-blur-md rounded-3xl p-4 sm:p-5 border border-white/80 shadow-soft-card hover:shadow-soft-hover hover:-translate-y-1 transition-all duration-300 relative group" data-category="creative" data-vibe="1" data-time="3">
+          <div class="flex items-center justify-between mb-3">
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-2xl bg-pastel-blush text-xs font-bold text-[#A84968] border border-pink-100/70 shadow-sm">
+              <span>🌸</span>
+              <span class="fuzzy-score">96% Match: Perfect Vibe</span>
+            </span>
+            <div class="flex items-center gap-1.5">
+              <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-[#FFD6A5] to-[#BDB2FF] p-[2px] shadow-sm flex items-center justify-center">
+                <div class="w-full h-full bg-white rounded-full flex items-center justify-center text-[10px] font-bold text-pastel-dark">
+                  96
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex justify-between items-start gap-2 mb-2">
+            <div>
+              <span class="text-[10px] font-bold tracking-wider uppercase text-pastel-lavenderDeep bg-pastel-lavenderSoft/60 px-2.5 py-0.5 rounded-xl inline-block mb-1">
+                🎨 Creative Arts & Ceramics
+              </span>
+              <h3 class="text-base sm:text-lg font-bold text-pastel-dark leading-snug">
+                Pastel Pottery & Herbal Matcha Evening
+              </h3>
+            </div>
+            <span class="text-xl p-2 rounded-2xl bg-pastel-peach/50 shrink-0">🍵</span>
+          </div>
+
+          <p class="text-xs text-pastel-muted leading-relaxed mb-3">
+            Unwind with soft acoustic lo-fi, tactile clay shaping, and ceremonial lavender matcha. Ideal for mellow social energy and mindful conversations.
+          </p>
+
+          <div class="flex flex-wrap items-center gap-2 text-[11px] mb-4 text-pastel-dark/80">
+            <span class="flex items-center gap-1 bg-pastel-cream px-2.5 py-1 rounded-xl border border-white/60">
+              <span>📍</span> 2.4 km away (Willow Studio)
+            </span>
+            <span class="flex items-center gap-1 bg-pastel-cream px-2.5 py-1 rounded-xl border border-white/60">
+              <span>🕒</span> Today, 6:30 PM - 9:00 PM
+            </span>
+            <span class="flex items-center gap-1 bg-pastel-cream px-2.5 py-1 rounded-xl border border-white/60">
+              <span>🎟️</span> 6 spots left
+            </span>
+          </div>
+
+          <div class="flex items-center justify-between pt-2 border-t border-gray-100/80">
+            <div class="flex items-center -space-x-1.5">
+              <div class="w-6 h-6 rounded-full bg-[#FFD6A5] border-2 border-white flex items-center justify-center text-[9px] font-bold">🌸</div>
+              <div class="w-6 h-6 rounded-full bg-[#BDB2FF] border-2 border-white flex items-center justify-center text-[9px] font-bold text-white">✨</div>
+              <div class="w-6 h-6 rounded-full bg-[#CAFFBF] border-2 border-white flex items-center justify-center text-[9px] font-bold">🌿</div>
+              <span class="text-[10px] text-pastel-muted pl-2 font-medium">+18 attending</span>
+            </div>
+            <button class="rsvp-btn px-4 py-2 rounded-2xl bg-pastel-lavender hover:bg-pastel-lavenderSoft text-pastel-lavenderDeep text-xs font-bold transition-all shadow-sm flex items-center gap-1 active:scale-95">
+              <span>RSVP Seat</span>
+              <span>→</span>
+            </button>
+          </div>
+        </article>
+
+        <!-- Event Card 2 -->
+        <article class="event-card bg-white/90 backdrop-blur-md rounded-3xl p-4 sm:p-5 border border-white/80 shadow-soft-card hover:shadow-soft-hover hover:-translate-y-1 transition-all duration-300 relative group" data-category="tech" data-vibe="2" data-time="3">
+          <div class="flex items-center justify-between mb-3">
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-2xl bg-pastel-blue text-xs font-bold text-pastel-blueDeep border border-blue-100/70 shadow-sm">
+              <span>⚡</span>
+              <span class="fuzzy-score">92% Match: Schedule & Taste Alignment</span>
+            </span>
+            <div class="flex items-center gap-1.5">
+              <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-[#A0C4FF] to-[#CAFFBF] p-[2px] shadow-sm flex items-center justify-center">
+                <div class="w-full h-full bg-white rounded-full flex items-center justify-center text-[10px] font-bold text-pastel-dark">
+                  92
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex justify-between items-start gap-2 mb-2">
+            <div>
+              <span class="text-[10px] font-bold tracking-wider uppercase text-pastel-blueDeep bg-pastel-blue/60 px-2.5 py-0.5 rounded-xl inline-block mb-1">
+                💻 Tech, AI & Design
+              </span>
+              <h3 class="text-base sm:text-lg font-bold text-pastel-dark leading-snug">
+                Ambient AI & UI Builders Fireside
+              </h3>
+            </div>
+            <span class="text-xl p-2 rounded-2xl bg-pastel-blue/50 shrink-0">✨</span>
+          </div>
+
+          <p class="text-xs text-pastel-muted leading-relaxed mb-3">
+            Casual whiteboard explorations on generative user interfaces, design systems, and fuzzy algorithms. Refreshing mocktails & light pastries served.
+          </p>
+
+          <div class="flex flex-wrap items-center gap-2 text-[11px] mb-4 text-pastel-dark/80">
+            <span class="flex items-center gap-1 bg-pastel-cream px-2.5 py-1 rounded-xl border border-white/60">
+              <span>📍</span> 4.1 km away (Glasshouse Loft)
+            </span>
+            <span class="flex items-center gap-1 bg-pastel-cream px-2.5 py-1 rounded-xl border border-white/60">
+              <span>🕒</span> Tomorrow, 7:00 PM - 9:30 PM
+            </span>
+            <span class="flex items-center gap-1 bg-pastel-cream px-2.5 py-1 rounded-xl border border-white/60">
+              <span>🧁</span> Food & drinks included
+            </span>
+          </div>
+
+          <div class="flex items-center justify-between pt-2 border-t border-gray-100/80">
+            <div class="flex items-center -space-x-1.5">
+              <div class="w-6 h-6 rounded-full bg-[#CAFFBF] border-2 border-white flex items-center justify-center text-[9px] font-bold">🤖</div>
+              <div class="w-6 h-6 rounded-full bg-[#FFD6A5] border-2 border-white flex items-center justify-center text-[9px] font-bold">🎨</div>
+              <span class="text-[10px] text-pastel-muted pl-2 font-medium">+34 attending</span>
+            </div>
+            <button class="rsvp-btn px-4 py-2 rounded-2xl bg-[#FFD6A5] hover:bg-[#FFE7D1] text-pastel-peachDeep text-xs font-bold transition-all shadow-sm flex items-center gap-1 active:scale-95">
+              <span>RSVP Seat</span>
+              <span>→</span>
+            </button>
+          </div>
+        </article>
+
+        <!-- Event Card 3 -->
+        <article class="event-card bg-white/90 backdrop-blur-md rounded-3xl p-4 sm:p-5 border border-white/80 shadow-soft-card hover:shadow-soft-hover hover:-translate-y-1 transition-all duration-300 relative group" data-category="wellness" data-vibe="1" data-time="1">
+          <div class="flex items-center justify-between mb-3">
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-2xl bg-pastel-sage text-xs font-bold text-pastel-sageDeep border border-green-100/70 shadow-sm">
+              <span>🌿</span>
+              <span class="fuzzy-score">88% Match: High Comfort Harmony</span>
+            </span>
+            <div class="flex items-center gap-1.5">
+              <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-[#CAFFBF] to-[#FFD6A5] p-[2px] shadow-sm flex items-center justify-center">
+                <div class="w-full h-full bg-white rounded-full flex items-center justify-center text-[10px] font-bold text-pastel-dark">
+                  88
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex justify-between items-start gap-2 mb-2">
+            <div>
+              <span class="text-[10px] font-bold tracking-wider uppercase text-pastel-sageDeep bg-pastel-sage/70 px-2.5 py-0.5 rounded-xl inline-block mb-1">
+                🧘‍♀️ Wellness & Slow Morning
+              </span>
+              <h3 class="text-base sm:text-lg font-bold text-pastel-dark leading-snug">
+                Botanical Garden Breathwork & Sound Bath
+              </h3>
+            </div>
+            <span class="text-xl p-2 rounded-2xl bg-pastel-sage/50 shrink-0">🪴</span>
+          </div>
+
+          <p class="text-xs text-pastel-muted leading-relaxed mb-3">
+            Gentle acoustic crystal bowls under sunlit glass greenhouse arches. Organic jasmine tea and fruit tarts provided afterwards.
+          </p>
+
+          <div class="flex flex-wrap items-center gap-2 text-[11px] mb-4 text-pastel-dark/80">
+            <span class="flex items-center gap-1 bg-pastel-cream px-2.5 py-1 rounded-xl border border-white/60">
+              <span>📍</span> 5.8 km away (Atrium Conservatory)
+            </span>
+            <span class="flex items-center gap-1 bg-pastel-cream px-2.5 py-1 rounded-xl border border-white/60">
+              <span>🕒</span> Sunday, 9:00 AM - 11:00 AM
+            </span>
+            <span class="flex items-center gap-1 bg-pastel-cream px-2.5 py-1 rounded-xl border border-white/60">
+              <span>🧘</span> Beginner friendly
+            </span>
+          </div>
+
+          <div class="flex items-center justify-between pt-2 border-t border-gray-100/80">
+            <div class="flex items-center -space-x-1.5">
+              <div class="w-6 h-6 rounded-full bg-[#E8DFFF] border-2 border-white flex items-center justify-center text-[9px] font-bold">✨</div>
+              <div class="w-6 h-6 rounded-full bg-[#CAFFBF] border-2 border-white flex items-center justify-center text-[9px] font-bold">🌿</div>
+              <span class="text-[10px] text-pastel-muted pl-2 font-medium">+12 attending</span>
+            </div>
+            <button class="rsvp-btn px-4 py-2 rounded-2xl bg-pastel-sage hover:bg-emerald-100 text-pastel-sageDeep text-xs font-bold transition-all shadow-sm flex items-center gap-1 active:scale-95">
+              <span>RSVP Seat</span>
+              <span>→</span>
+            </button>
+          </div>
+        </article>
+
+        <!-- No Results Fallback State (Hidden by default) -->
+        <div id="noResultsState" class="hidden bg-white/80 backdrop-blur-md rounded-3xl p-8 border border-white/70 text-center shadow-soft-card">
+          <div class="text-3xl mb-2">🌸</div>
+          <h4 class="font-bold text-sm text-pastel-dark">No Exact Match for Selected Combination</h4>
+          <p class="text-xs text-pastel-muted mt-1 max-w-xs mx-auto">Try widening your distance limit or selecting additional tags to see more gatherings.</p>
+          <button id="clearFiltersFromEmpty" class="mt-4 px-4 py-2 rounded-2xl bg-pastel-lavender text-pastel-lavenderDeep text-xs font-bold hover:bg-pastel-lavenderSoft">
+            Clear Filters
+          </button>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- Observability Preview Footer & Metrics Utility Bar -->
+  <footer class="mt-6 px-4 pb-4 max-w-4xl mx-auto w-full">
+    <div class="bg-white/80 backdrop-blur-md border border-white/60 rounded-3xl p-3.5 shadow-soft-card">
+      <div class="flex flex-col sm:flex-row items-center justify-between gap-2.5 text-xs">
+
+        <!-- Observability Pulse Indicator -->
+        <div class="flex items-center gap-2">
+          <div class="relative flex items-center justify-center">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+            <span class="absolute w-4 h-4 rounded-full bg-emerald-300 opacity-60 animate-gentle-pulse"></span>
+          </div>
+          <span class="font-bold text-pastel-dark text-[11px] tracking-wide">
+            System Observability: <span class="text-emerald-600 font-semibold">Healthy</span>
+          </span>
+          <span class="text-[10px] bg-pastel-cream text-pastel-muted px-2 py-0.5 rounded-lg border border-white/80">
+            Prometheus 2.53 connected
+          </span>
+        </div>
+
+        <!-- Metric badges -->
+        <div class="flex items-center flex-wrap gap-2 text-[10px] text-pastel-muted">
+          <span class="bg-pastel-lavender/50 px-2.5 py-1 rounded-xl text-pastel-lavenderDeep font-medium">
+            ⚡ Events Processed: <strong class="font-bold" id="eventCounter">1,429</strong>
+          </span>
+          <span class="bg-pastel-peach/50 px-2.5 py-1 rounded-xl text-pastel-peachDeep font-medium">
+            🌸 Inference: <strong id="inferenceMs">8.4ms</strong>
+          </span>
+          <span class="bg-pastel-blue/50 px-2.5 py-1 rounded-xl text-pastel-blueDeep font-medium">
+            🎯 Match Accuracy: <strong>98.2%</strong>
+          </span>
+        </div>
+
+      </div>
+    </div>
+  </footer>
+
+  <!-- Interactive Logic Script (Sprint 1 UI + Sprint 2 API wiring merged) -->
+  <script>
+    // Elements
+    const vibeSlider = document.getElementById('vibeSlider');
+    const vibeLabel = document.getElementById('vibeLabel');
+    const timingSlider = document.getElementById('timingSlider');
+    const timeLabel = document.getElementById('timeLabel');
+    const distanceSlider = document.getElementById('distanceSlider');
+    const distanceLabel = document.getElementById('distanceLabel');
+    const badgeContainer = document.getElementById('badgeContainer');
+    const badges = document.querySelectorAll('.filter-badge');
+    const eventCards = document.querySelectorAll('.event-card');
+    const noResultsState = document.getElementById('noResultsState');
+    const resetFiltersBtn = document.getElementById('resetFiltersBtn');
+    const clearFiltersFromEmpty = document.getElementById('clearFiltersFromEmpty');
+    const viewToggleBtn = document.getElementById('viewToggleBtn');
+    const preferencesSection = document.getElementById('preferencesSection');
+    const inferenceMs = document.getElementById('inferenceMs');
+
+    // Works when served by FastAPI (same origin) or opened directly from disk
+    const API_BASE = window.location.protocol.startsWith('http') ? '' : 'http://localhost:8000';
+
+    let currentTag = 'all';
+    let matchTimer = null;
+    let matchAbort = null;
+
+    // Label dictionaries
+    const vibeMap = {
+      '1': 'Mellow & Chill',
+      '2': 'Balanced Social',
+      '3': 'High Energy & Buzz'
+    };
+
+    const timeMap = {
+      '1': 'Morning (8-12 AM)',
+      '2': 'Afternoon (1-5 PM)',
+      '3': 'Evening (6-10 PM)'
+    };
+
+    // Vibe Slider handler
+    vibeSlider.addEventListener('input', (e) => {
+      vibeLabel.textContent = vibeMap[e.target.value] || 'Custom';
+      recalcMatches();
+    });
+
+    // Timing Slider handler
+    timingSlider.addEventListener('input', (e) => {
+      timeLabel.textContent = timeMap[e.target.value] || 'Custom';
+      recalcMatches();
+    });
+
+    // Distance Slider handler
+    distanceSlider.addEventListener('input', (e) => {
+      distanceLabel.textContent = `Under ${e.target.value} km`;
+      recalcMatches();
+    });
+
+    // Tag selection (soft preference sent to the fuzzy engine)
+    badgeContainer.addEventListener('click', (e) => {
+      const btn = e.target.closest('.filter-badge');
+      if (!btn) return;
+
+      badges.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentTag = btn.getAttribute('data-tag');
+      recalcMatches();
+    });
+
+    // Debounced entry point used by every control
+    function recalcMatches() {
+      clearTimeout(matchTimer);
+      matchTimer = setTimeout(fetchMatches, 150);
+    }
+
+    // POST current preferences to the FastAPI fuzzy engine
+    async function fetchMatches() {
+      if (matchAbort) matchAbort.abort();
+      matchAbort = new AbortController();
+
+      const payload = {
+        vibe: parseInt(vibeSlider.value),
+        timing: parseInt(timingSlider.value),
+        max_distance: parseInt(distanceSlider.value),
+        interest: currentTag
+      };
+
+      try {
+        const res = await fetch(`${API_BASE}/matches`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+          signal: matchAbort.signal
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        renderMatches(data.matches);
+        if (inferenceMs) inferenceMs.textContent = `${data.inference_ms}ms`;
+      } catch (err) {
+        if (err.name !== 'AbortError') console.error('Match request failed:', err);
+      }
+    }
+
+    // Update scores and re-rank cards (best match on top)
+    function renderMatches(matches) {
+      const feed = document.getElementById('recommendationsSection');
+      const byTitle = {};
+      eventCards.forEach(c => { byTitle[c.querySelector('h3').textContent.trim()] = c; });
+
+      matches.forEach(m => {
+        const card = byTitle[m.title];
+        if (!card) return;
+        card.querySelector('.fuzzy-score').textContent = `${m.score}% Match: ${m.label}`;
+        const ring = card.querySelector('.w-8.h-8 > div');
+        if (ring) ring.textContent = m.score;
+        card.style.display = 'block';
+        feed.insertBefore(card, noResultsState);
+      });
+      noResultsState.classList.toggle('hidden', matches.length > 0);
+    }
+
+    // Reset Handler
+    function resetAll() {
+      vibeSlider.value = 1;
+      vibeLabel.textContent = vibeMap['1'];
+      timingSlider.value = 3;
+      timeLabel.textContent = timeMap['3'];
+      distanceSlider.value = 8;
+      distanceLabel.textContent = 'Under 8 km';
+
+      badges.forEach(b => b.classList.remove('active'));
+      const allBadge = document.querySelector('.filter-badge[data-tag="all"]');
+      if (allBadge) allBadge.classList.add('active');
+      currentTag = 'all';
+
+      recalcMatches();
+    }
+
+    resetFiltersBtn.addEventListener('click', resetAll);
+    clearFiltersFromEmpty.addEventListener('click', resetAll);
+
+    // RSVP button visual feedback
+    document.querySelectorAll('.rsvp-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<span>Reserved ✨</span>';
+        btn.classList.add('bg-pastel-sage', 'text-pastel-sageDeep');
+        setTimeout(() => {
+          btn.innerHTML = originalText;
+          btn.classList.remove('bg-pastel-sage', 'text-pastel-sageDeep');
+        }, 2200);
+      });
+    });
+
+    // Mobile scroll to preferences
+    viewToggleBtn.addEventListener('click', () => {
+      preferencesSection.scrollIntoView({ behavior: 'smooth' });
+    });
+
+    // Initial load
+    recalcMatches();
+  </script>
+</body>
+</html>
